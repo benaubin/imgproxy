@@ -32,7 +32,8 @@ import (
 
 var (
 	queueSem      *semaphore.Weighted
-	processingSem *semaphore.Weighted
+	processingSem *semaphore.Weighted // limit number of workers downloading & processing
+	computeSem    *semaphore.Weighted // limit number of workers processing
 
 	headerVaryValue string
 )
@@ -43,6 +44,7 @@ func initProcessingHandler() {
 	}
 
 	processingSem = semaphore.NewWeighted(int64(config.Workers))
+	computeSem = semaphore.NewWeighted(int64(config.ComputeWorkers))
 
 	vary := make([]string, 0)
 
@@ -443,6 +445,16 @@ func handleProcessing(reqID string, rw http.ResponseWriter, r *http.Request) {
 	}
 
 	resultData, err := func() (*imagedata.ImageData, error) {
+		func() {
+			defer metrics.StartComputeQueueSegment(ctx)()
+			err = computeSem.Acquire(ctx, 1)
+			if err != nil {
+				checkErr(ctx, "compute_queue", router.CheckTimeout(ctx))
+				sendErrAndPanic(ctx, "compute_queue", err)
+			}
+		}()
+		defer computeSem.Release(1)
+
 		defer metrics.StartProcessingSegment(ctx)()
 		return processing.ProcessImage(ctx, originData, po)
 	}()

@@ -28,6 +28,7 @@ var (
 	ClientKeepAliveTimeout int
 	DownloadTimeout        int
 	Workers                int
+	ComputeWorkers         int
 	RequestsQueueSize      int
 	MaxClients             int
 
@@ -435,6 +436,7 @@ func Configure() error {
 	} else {
 		configurators.Int(&Workers, "IMGPROXY_CONCURRENCY")
 		configurators.Int(&Workers, "IMGPROXY_WORKERS")
+		configurators.Int(&ComputeWorkers, "IMGPROXY_COMPUTE_WORKERS")
 	}
 
 	configurators.Int(&RequestsQueueSize, "IMGPROXY_REQUESTS_QUEUE_SIZE")
@@ -673,6 +675,10 @@ func Configure() error {
 
 	if Workers <= 0 {
 		return fmt.Errorf("Workers number should be greater than 0, now - %d\n", Workers)
+	}
+
+	if ComputeWorkers <= 0 {
+		ComputeWorkers = Workers
 	}
 
 	if RequestsQueueSize < 0 {

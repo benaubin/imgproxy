@@ -118,6 +118,21 @@ func StartDownloadingSegment(ctx context.Context) context.CancelFunc {
 	return cancel
 }
 
+func StartComputeQueueSegment(ctx context.Context) context.CancelFunc {
+	promCancel := prometheus.StartQueueSegment()
+	nrCancel := newrelic.StartSegment(ctx, "Queueing for compute worker")
+	ddCancel := datadog.StartSpan(ctx, "compute_queue")
+	otelCancel := otel.StartSpan(ctx, "compute_queue")
+
+	cancel := func() {
+		promCancel()
+		nrCancel()
+		ddCancel()
+		otelCancel()
+	}
+
+	return cancel
+}
 func StartProcessingSegment(ctx context.Context) context.CancelFunc {
 	promCancel := prometheus.StartProcessingSegment()
 	nrCancel := newrelic.StartSegment(ctx, "Processing image")
