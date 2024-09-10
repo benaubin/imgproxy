@@ -187,6 +187,13 @@ func StartQueueSegment() context.CancelFunc {
 	return startDuration(requestSpanDuration.With(prometheus.Labels{"span": "queue"}))
 }
 
+func StartComputeQueueSegment() context.CancelFunc {
+	if !enabled {
+		return func() {}
+	}
+
+	return startDuration(requestSpanDuration.With(prometheus.Labels{"span": "compute_queue"}))
+}
 func StartDownloadingSegment() context.CancelFunc {
 	if !enabled {
 		return func() {}
